@@ -1,0 +1,21 @@
+{
+  "name": "servo-pca9685",
+  "version": "0.0.1",
+  "description": "Library to run the PCA9685 PWM driver.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "Jia Huang <jialiya.huang0@gmail.com>",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "directories": {
+    "example": "examples"
+  },
+  "keywords": [
+    "tessel",
+    "servo",
+    "pca9685"
+  ]
+}
