@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/technicalmachine/servo-pca9685.git"
+  },
   "author": "Jia Huang <jialiya.huang0@gmail.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
@@ -17,5 +20,6 @@
     "tessel",
     "servo",
     "pca9685"
-  ]
+  ],
+  "gitHead": "817db128bd7934a99c3d412b725712008def9931"
 }

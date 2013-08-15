@@ -32,6 +32,9 @@ function write_register (addressToWrite, dataToWrite)
 // servo: 1... 16
 // on: 1...100% of time that the servo is on
 function set_pwm(servo, on){
+  if (servo < 1 || servo > 16) {
+    throw "Hey, servos are 1 indexed! Servos can be between 1...16";
+  }
   var convert_on = 0;
   var convert_off = Math.floor(MAX/100*on);
 
