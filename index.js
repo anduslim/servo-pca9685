@@ -4,7 +4,8 @@ var EventEmitter = require('tessel').EventEmitter;
 // address bit is 111xy11 where x is controlled by GPIO2 and y is controlled by GPIO1
 // by default x and y will be 0
 // used http://www.nxp.com/documents/data_sheet/PCA9685.pdf as a reference
-var ADDRESS = 0x73;
+
+var I2C_ADDRESS = 0x73;
 var LED0_ON_L = 0x06;
 var LED0_ON_H = 0x07;
 var LED0_OFF_L = 0x08;
@@ -13,21 +14,44 @@ var MAX = 4096;
 var MODE1 = 0x0;
 var PRE_SCALE = 0xFE;
 
-function read_registers (addressToRead, bytesToRead)
-{
-  return tm.i2c_master_request_blocking(tm.I2C_1, ADDRESS, [addressToRead], bytesToRead);
+
+// var i2c = tessel.i2c(1);
+
+// i2c = function ()
+
+i2c = {
+  request: function (addr, data, size, fn) {
+    var ret = tm.i2c_master_request_blocking(tm.I2C_1, addr, data, size);
+    setImmediate(function () {
+      fn && fn(null, ret);
+    });
+  },
+  send: function (addr, data, fn) {
+    tm.i2c_master_send_blocking(tm.I2C_1, addr, data);
+    setImmediate(function () {
+      fn && fn(null);
+    });
+  },
+  receive: function (addr, size, fn) {
+    var ret = tm.i2c_master_receive_blocking(tm.I2C_1, addr, size);
+    setImmediate(function () {
+      fn && fn(null, ret);
+    });
+  }
+};
+
+function readRegisters (register, size, next) {
+  i2c.request(I2C_ADDRESS, [register], size, next)
 }
 
-function read_register (addressToRead)
-{
-  return read_registers(addressToRead, 1)[0];
+function readRegister (register, next) {
+  readRegisters(register, 1, function (err, data) {
+    next(err, data[0]);
+  });
 }
 
-// Write a single byte to the register.
-
-function write_register (addressToWrite, dataToWrite)
-{
-  tm.i2c_master_send_blocking(tm.I2C_1, ADDRESS, [addressToWrite, dataToWrite]);
+function writeRegister (register, data, next) {
+  i2c.send(I2C_ADDRESS, [register, data], next)
 }
 
 // TODO: fix this
@@ -46,19 +70,23 @@ function write_register (addressToWrite, dataToWrite)
 // }
 
 // sets the driver frequency. freq has units of Hz
-function setFrequency (freq) {
+function setFrequency (freq, next) {
   var prescaleval = (25000000/MAX)/freq - 1;
   var prescale = Math.floor(prescaleval); 
   
-  var oldmode = read_register(MODE1);
-  // gotta sleep it before we can change the prescale
-  var newmode = oldmode | 0x10;
-  write_register(MODE1, newmode);
-  write_register(PRE_SCALE, prescale); 
-  write_register(MODE1, oldmode);
-  tm.sleep_ms(100);
-
-  write_register(MODE1, 0xa1);
+  readRegister(MODE1, function (err, oldmode) {
+    // gotta sleep it before we can change the prescale
+    var newmode = oldmode | 0x10;
+    writeRegister(MODE1, newmode);
+    writeRegister(PRE_SCALE, prescale); 
+    writeRegister(MODE1, oldmode, function () {
+      // Delay 100ms
+      setTimeout(function () {
+        writeRegister(MODE1, 0xa1);
+        next && next();
+      }, 100)
+    });
+  });
 }
 
 function Servo (idx, low, high) {
@@ -77,10 +105,10 @@ Servo.prototype.move = function (val) {
   this.setPWM(((val/180) * (this.high - this.low)) + this.low);
   
   // TODO async I2C
-  var servo = this;
-  setImmediate(function () {
-    servo.emit('move');
-  })
+  // var servo = this;
+  // setImmediate(function () {
+  //   servo.emit('move');
+  // })
 };
 
 // servo: 1... 16
@@ -89,11 +117,11 @@ Servo.prototype.setPWM = function (on) {
   var convert_on = 0;
   var convert_off = Math.floor(MAX/100*on);
 
-  write_register(LED0_ON_L+(this.idx-1)*4, convert_on);
-  write_register(LED0_ON_H+(this.idx-1)*4, convert_on>>8);
-
-  write_register(LED0_OFF_L+(this.idx-1)*4, convert_off);
-  write_register(LED0_OFF_H+(this.idx-1)*4, convert_off>>8);
+  // Queue writes
+  writeRegister(LED0_ON_L+(this.idx-1)*4, convert_on);
+  writeRegister(LED0_ON_H+(this.idx-1)*4, convert_on>>8);
+  writeRegister(LED0_OFF_L+(this.idx-1)*4, convert_off);
+  writeRegister(LED0_OFF_H+(this.idx-1)*4, convert_off>>8);
 }
 
 exports.port = function () {
@@ -105,7 +133,9 @@ exports.port = function () {
       tm.i2c_master_enable(tm.I2C_1);
       console.log("Starting up PCA9685...");
 
-      setFrequency(50);
+      setFrequency(50, function () {
+        servo.emit('connected');
+      });
       return servo;
     }
   }
