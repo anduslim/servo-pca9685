@@ -12,13 +12,15 @@ Import:
 var servo = require('servo-pca9685');
 ```
 
-Functions:
+API:
 
-*  **`servo`.initialize()**
+*  *actuator* = **`servo`.port('a').connect(1-16)**
 
-*  **`servo`.set_freq(hertz)** 
+*  **`servo`.setFrequency(hertz)** 
 
-*  **`servo`.set_pwm(servo, duty_cycle)** 
+*  `actuator`.move(0-180)** 
+
+*  `actuator` emits **("move", deg)**
 
 ## License
 

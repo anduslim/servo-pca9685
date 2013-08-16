@@ -2,15 +2,15 @@ var servo = require('../');
 
 // Initialize the servo.
 console.log("initalizing");
-servo.initialize();
 
+var cs61 = servo.port('A').connect(1, 4, 15);
 
 var pos = 0;
 setInterval(function () {
   console.log("Position float:", pos);
-  servo.setPosition(1, pos);
-  pos += .025;
-  if (pos > 1.0) {
+  cs61.move(pos);
+  pos += 45;
+  if (pos > 180) {
     pos = 0;
   }
-}, 150);
+}, 1500);
