@@ -31,7 +31,8 @@ function write_register (addressToWrite, dataToWrite)
 
 // servo: 1... 16
 // on: 1...100% of time that the servo is on
-function set_pwm(servo, on){
+function setPWM(servo, on){
+  console.log(servo, on);
   if (servo < 1 || servo > 16) {
     throw "Hey, servos are 1 indexed! Servos can be between 1...16";
   }
@@ -61,7 +62,7 @@ function set_pwm(servo, on){
 // }
 
 // sets the driver frequency. freq has units of Hz
-function set_freq(freq){
+function setFrequency (freq) {
   var prescaleval = (25000000/MAX)/freq - 1;
   var prescale = Math.floor(prescaleval); 
   
@@ -76,16 +77,23 @@ function set_freq(freq){
   write_register(MODE1, 0xa1);
 }
 
+// 0...1
+function setPosition (i, val) {
+  setPWM(i, (val * (exports.upper - exports.lower)) + exports.lower);
+}
+
 function initialize (next)
 {
   tm.i2c_initialize(tm.I2C_1);
   tm.i2c_master_enable(tm.I2C_1);
   console.log("Starting up PCA9685...");
 
-  set_freq(50);
+  setFrequency(50);
 }
 
+exports.lower = 4;
+exports.upper = 15;
 exports.initialize = initialize;
-exports.set_pwm = set_pwm;
-exports.set_freq = set_freq;
-// exports.read_servo = read_servo;
+exports.setPWM = setPWM;
+exports.setFrequency = setFrequency;
+exports.setPosition = setPosition;
