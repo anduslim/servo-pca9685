@@ -19,33 +19,31 @@ var PRE_SCALE = 0xFE;
 
 // i2c = function ()
 
+var i2cidx = tm.I2C_1;
+
 i2c = {
   request: function (addr, data, size, fn) {
-    var ret = tm.i2c_master_request_blocking(tm.I2C_1, addr, data, size);
+    var ret = tm.i2c_master_request_blocking(i2cidx, addr, data, size);
     setImmediate(function () {
       fn && fn(null, ret);
     });
   },
   send: function (addr, data, fn) {
-    tm.i2c_master_send_blocking(tm.I2C_1, addr, data);
+    tm.i2c_master_send_blocking(i2cidx, addr, data);
     setImmediate(function () {
       fn && fn(null);
     });
   },
   receive: function (addr, size, fn) {
-    var ret = tm.i2c_master_receive_blocking(tm.I2C_1, addr, size);
+    var ret = tm.i2c_master_receive_blocking(i2cidx, addr, size);
     setImmediate(function () {
       fn && fn(null, ret);
     });
   }
 };
 
-function readRegisters (register, size, next) {
-  i2c.request(I2C_ADDRESS, [register], size, next)
-}
-
 function readRegister (register, next) {
-  readRegisters(register, 1, function (err, data) {
+  i2c.request(I2C_ADDRESS, [register], 1, function (err, data) {
     next(err, data[0]);
   });
 }
