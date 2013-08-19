@@ -68,21 +68,21 @@ Servo.prototype = new EventEmitter();
 // 0...180
 Servo.prototype.move = function (val, next) {
   var servo = this;
-  servo.onconnect(function () {
+  // servo.onconnect(function () {
     this.setPWM(((val/180) * (this.high - this.low)) + this.low, function () {
       // this.emit('move'); TODO
       next && next();
     });
-  });
+  // });
 };
 
-Servo.prototype.onconnect = function (fn) {
-  if (!this._connected) {
-    this.on('connect', fn);
-  } else {
-    fn();
-  }
-};
+// Servo.prototype.onconnect = function (fn) {
+//   if (!this._connected) {
+//     this.on('connect', fn);
+//   } else {
+//     fn();
+//   }
+// };
 
 // servo: 1... 16
 // on: 1...100% of time that the servo is on
