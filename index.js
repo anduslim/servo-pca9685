@@ -3,7 +3,7 @@
 // used http://www.nxp.com/documents/data_sheet/PCA9685.pdf as a reference
 
 var tessel = require('tessel');
-var EventEmitter = require('tessel').EventEmitter;
+var EventEmitter = require('events').EventEmitter;
 
 //
 // I2C Configuration
