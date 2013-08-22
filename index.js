@@ -69,7 +69,7 @@ Servo.prototype = new EventEmitter();
 Servo.prototype.move = function (val, next) {
   var servo = this;
   servo.onconnect(function () {
-    this.setPWM(((val/180) * (this.high - this.low)) + this.low, function () {
+    servo.setPWM(((val/180) * (servo.high - servo.low)) + servo.low, function () {
       // this.emit('move'); TODO
       next && next();
     });
