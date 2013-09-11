@@ -2,8 +2,7 @@
 // by default x and y will be 0
 // used http://www.nxp.com/documents/data_sheet/PCA9685.pdf as a reference
 
-var tessel = require('tessel');
-var EventEmitter = require('events').EventEmitter;
+var events = require('events');
 
 //
 // I2C Configuration
@@ -18,24 +17,34 @@ var MAX = 4096;
 var MODE1 = 0x0;
 var PRE_SCALE = 0xFE;
 
-var i2c = tessel.i2c(I2C_ADDRESS);
+/**
+ * ServoController
+ */
 
-function readRegister (register, next) {
-  i2c.request([register], 1, function (err, data) {
+function ServoController (hardware, low, high) {
+  this.hardware = hardware;
+
+  this.i2c = new hardware.I2C(I2C_ADDRESS);
+
+  this.low = low || 5;
+  this.high = high || 15;
+}
+
+util.inherits(ServoController, events.EventEmitter);
+
+ServoController.prototype._readRegister = function (register, next) {
+  this.i2c.request([register], 1, function (err, data) {
     next(err, data[0]);
   });
 }
 
-function writeRegister (register, data, next) {
-  i2c.send([register, data], next)
+ServoController.prototype._writeRegister = function (register, data, next) {
+  this.i2c.send([register, data], next)
 }
 
-/**
- * Frequency
- */
 
 // sets the driver frequency. freq has units of Hz
-function setFrequency (freq, next) {
+ServoController.prototype.setFrequency = function (freq, next) {
   var prescaleval = (25000000/MAX)/freq - 1;
   var prescale = Math.floor(prescaleval); 
   
@@ -54,19 +63,12 @@ function setFrequency (freq, next) {
   });
 }
 
-function Servo (idx, low, high) {
+// 0...180
+ServoController.prototype.moveServo = function (idx, val, next) {
   if (idx < 1 || idx > 16) {
     throw "Servos are 1-indexed. Servos can be between 1-16.";
   }
-  this.idx = idx;
-  this.low = low || 5;
-  this.high = high || 15;
-}
 
-Servo.prototype = new EventEmitter();
-
-// 0...180
-Servo.prototype.move = function (val, next) {
   var servo = this;
   // servo.onconnect(function () {
     this.setPWM(((val/180) * (this.high - this.low)) + this.low, function () {
@@ -86,7 +88,11 @@ Servo.prototype.move = function (val, next) {
 
 // servo: 1... 16
 // on: 1...100% of time that the servo is on
-Servo.prototype.setPWM = function (on, next) {
+ServoController.prototype.setPWM = function (idx, on, next) {
+  if (idx < 1 || idx > 16) {
+    throw "Servos are 1-indexed. Servos can be between 1-16.";
+  }
+
   var convert_on = 0;
   var convert_off = Math.floor(MAX/100*on);
 
@@ -97,19 +103,13 @@ Servo.prototype.setPWM = function (on, next) {
   writeRegister(LED0_OFF_H+(this.idx-1)*4, convert_off>>8, next);
 }
 
-function port (id) {
-  return {
-    connect: function (idx, low, high) {
-      i2c.initialize();
-
-      var servo = new Servo(idx, low, high);
-      setFrequency(50, function () {
-        servo._connected = true;
-        servo.emit('connected');
-      });
-      return servo;
-    }
-  }
+function connect (hardware, low, high) {
+  var servos = new ServoController(hardware, low, high);
+  servos.setFrequency(50, function () {
+    servos._connected = true;
+    servos.emit('connected');
+  });
+  return servos;
 }
 
 //
@@ -132,10 +132,9 @@ function port (id) {
 // }
 
 
-//
-// Public API
-//
+/**
+ * Public API
+ */
 
-exports.port = port;
-exports.setFrequency = setFrequency;
-exports.Servo = Servo;
+exports.connect = connect;
+exports.ServoController = ServoController;

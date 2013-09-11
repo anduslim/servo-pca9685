@@ -4,7 +4,7 @@ var servo = require('../');
 console.log("initalizing");
 
 // Port A, servo 1, calibrate min/max PWM of 4-15
-var cs61 = servo.port('A').connect(1, 4, 15);
+var cs61 = servo.port('A').connect(1, 5, 13);
 
 cs61.on('connected', function () {
   var pos = 0;
@@ -17,5 +17,5 @@ cs61.on('connected', function () {
     if (pos > 180) {
       pos = 0;
     }
-  }, 1500);
+  }, 500);
 });

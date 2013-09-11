@@ -1,4 +1,4 @@
-# PCA9685 servo driver
+# PCA9685 as a servo driver
 
 Install:
 
@@ -8,32 +8,32 @@ npm install servo-pca9685
 
 Import:
 
-```
-var servo = require('servo-pca9685');
-```
-
 API:
 
-*  *actuator* = **`servo`.port('a').connect(1-16)**
+`servos = require('servo-pca9685').connect(hardwareapi)`
 
-*  **`servo`.setFrequency(hertz)** 
+*  **servos.<b>setFrequency</b> (`hertz`)** 
 
-*  `actuator`.move(0-180)** 
+*  servos.<b>moveServo</b> (`servonumber`, `degrees`)** 
 
-*  `actuator` emits **("move", deg)**
+*  servos *emits* (`"move"`, `servonumber`, `degrees`)
 
 Example:
 
 ```javascript
-var actuator = servo.port('A').connect(1);
-actuator.move(0);
+var actuator = servo.connect(myhardware);
+actuator.moveServo(1, 0);
 actuator.once('move', function () {
-  actuator.move(90);
+  actuator.moveServo(1, 90);
   actuator.once('move', function () {
-    actuator.move(180);
+    actuator.moveServo(1, 180);
   });
 })
 ```
+
+## TODO
+
+This can be used with LEDs also and this package is very narrowly named.
 
 ## License
 
