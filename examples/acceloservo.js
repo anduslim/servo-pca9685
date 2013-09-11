@@ -6,7 +6,7 @@ console.log('check..')
 console.log("initalizing");
 
 // Port A, servo 1, calibrate min/max PWM of 4-15
-var cs61 = servo.port('A').connect(2, 4, 15);
+var cs61 = servo.connect(tessel.port('A'));
 //Set accelerometer GPIO pins
 var xpin = tessel.port('gpio').analog(0);
 var ypin = tessel.port('gpio').analog(1);

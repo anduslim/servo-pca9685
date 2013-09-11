@@ -4,13 +4,13 @@ var servo = require('../');
 console.log("initalizing");
 
 // Port A, servo 1, calibrate min/max PWM of 4-15
-var cs61 = servo.port('A').connect(1, 5, 13);
+var cs61 = servo.connect(tessel.port('A'), 5, 13);
 
 cs61.on('connected', function () {
   var pos = 0;
   setInterval(function () {
     console.log("Deg rotation:", pos);
-    cs61.move(pos);
+    cs61.moveServo(1, pos);
 
     // Increment by 45 deg
     pos += 45;

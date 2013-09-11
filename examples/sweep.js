@@ -1,6 +1,6 @@
 var servo = require('../');
 
-var actuator = servo.port('A').connect(1);
+var actuator = servo.connect(tessel.port('A'));
 actuator.move(0);
 actuator.once('move', function () {
   actuator.move(90);
