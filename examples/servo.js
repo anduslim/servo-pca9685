@@ -1,3 +1,4 @@
+var tessel = require('tessel');
 var servo = require('../');
 
 // Initialize the servo.

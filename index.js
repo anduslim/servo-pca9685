@@ -3,6 +3,7 @@
 // used http://www.nxp.com/documents/data_sheet/PCA9685.pdf as a reference
 
 var events = require('events');
+var util = require('util');
 
 //
 // I2C Configuration
@@ -21,10 +22,12 @@ var PRE_SCALE = 0xFE;
  * ServoController
  */
 
-function ServoController (hardware, low, high) {
+function ServoController (hardware, low, high)
+{
   this.hardware = hardware;
 
   this.i2c = new hardware.I2C(I2C_ADDRESS);
+  this.i2c.initialize();
 
   this.low = low || 5;
   this.high = high || 15;
@@ -32,31 +35,35 @@ function ServoController (hardware, low, high) {
 
 util.inherits(ServoController, events.EventEmitter);
 
-ServoController.prototype._readRegister = function (register, next) {
-  this.i2c.request([register], 1, function (err, data) {
+ServoController.prototype._readRegister = function (register, next)
+{
+  this.i2c.transfer([register], 1, function (err, data) {
     next(err, data[0]);
   });
 }
 
-ServoController.prototype._writeRegister = function (register, data, next) {
+ServoController.prototype._writeRegister = function (register, data, next)
+{
   this.i2c.send([register, data], next)
 }
 
 
 // sets the driver frequency. freq has units of Hz
-ServoController.prototype.setFrequency = function (freq, next) {
+ServoController.prototype.setFrequency = function (freq, next)
+{
   var prescaleval = (25000000/MAX)/freq - 1;
   var prescale = Math.floor(prescaleval); 
   
-  readRegister(MODE1, function (err, oldmode) {
+  var self = this;
+  self._readRegister(MODE1, function (err, oldmode) {
     // gotta sleep it before we can change the prescale
     var newmode = oldmode | 0x10;
-    writeRegister(MODE1, newmode);
-    writeRegister(PRE_SCALE, prescale); 
-    writeRegister(MODE1, oldmode, function () {
+    self._writeRegister(MODE1, newmode);
+    self._writeRegister(PRE_SCALE, prescale); 
+    self._writeRegister(MODE1, oldmode, function () {
       // Delay 100ms
       setTimeout(function () {
-        writeRegister(MODE1, 0xa1);
+        self._writeRegister(MODE1, 0xa1);
         next && next();
       }, 100)
     });
@@ -64,17 +71,15 @@ ServoController.prototype.setFrequency = function (freq, next) {
 }
 
 // 0...180
-ServoController.prototype.moveServo = function (idx, val, next) {
+ServoController.prototype.moveServo = function (idx, val, next)
+{
   if (idx < 1 || idx > 16) {
     throw "Servos are 1-indexed. Servos can be between 1-16.";
   }
 
   var servo = this;
   // servo.onconnect(function () {
-    this.setPWM(((val/180) * (this.high - this.low)) + this.low, function () {
-      // this.emit('move'); TODO
-      next && next();
-    });
+    this.setPWM(idx, ((val/180) * (this.high - this.low)) + this.low, next);
   // });
 };
 
@@ -88,7 +93,8 @@ ServoController.prototype.moveServo = function (idx, val, next) {
 
 // servo: 1... 16
 // on: 1...100% of time that the servo is on
-ServoController.prototype.setPWM = function (idx, on, next) {
+ServoController.prototype.setPWM = function (idx, on, next)
+{
   if (idx < 1 || idx > 16) {
     throw "Servos are 1-indexed. Servos can be between 1-16.";
   }
@@ -97,16 +103,23 @@ ServoController.prototype.setPWM = function (idx, on, next) {
   var convert_off = Math.floor(MAX/100*on);
 
   // Queue writes
-  writeRegister(LED0_ON_L+(this.idx-1)*4, convert_on);
-  writeRegister(LED0_ON_H+(this.idx-1)*4, convert_on>>8);
-  writeRegister(LED0_OFF_L+(this.idx-1)*4, convert_off);
-  writeRegister(LED0_OFF_H+(this.idx-1)*4, convert_off>>8, next);
+  this._writeRegister(LED0_ON_L + (idx-1)*4, convert_on);
+  this._writeRegister(LED0_ON_H + (idx-1)*4, convert_on >> 8);
+  this._writeRegister(LED0_OFF_L + (idx-1)*4, convert_off);
+  this._writeRegister(LED0_OFF_H + (idx-1)*4, convert_off >> 8, next);
 }
 
-function connect (hardware, low, high) {
+function connect (hardware, low, high, next)
+{
+  if (typeof low == 'function') {
+    next = low;
+    low = null;
+  }
+
   var servos = new ServoController(hardware, low, high);
   servos.setFrequency(50, function () {
     servos._connected = true;
+    next && next();
     servos.emit('connected');
   });
   return servos;
